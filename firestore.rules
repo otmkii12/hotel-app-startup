@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && request.auth.token.email == "rifkiagung874@gmail.com";
+    }
+
+    function isOwner() {
+      return isSignedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    function isCreatingOwnBooking() {
+      return isSignedIn()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.userName is string
+        && request.resource.data.userEmail is string
+        && request.resource.data.userPhone is string
+        && request.resource.data.bookingCode is string
+        && request.resource.data.room is string
+        && request.resource.data.roomPrice is number
+        && request.resource.data.checkin is string
+        && request.resource.data.checkout is string
+        && request.resource.data.nights is number
+        && request.resource.data.guests is number
+        && request.resource.data.rooms is number
+        && request.resource.data.paymentMethod is string
+        && request.resource.data.status == "Menunggu Pembayaran"
+        && request.resource.data.total is number;
+    }
+
+    match /bookings/{bookingId} {
+      allow create: if isCreatingOwnBooking();
+      allow read: if isAdmin() || isOwner();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
