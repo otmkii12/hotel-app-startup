@@ -1,3 +1,35 @@
+const ALLOWED_ROOMS = {
+    "Deluxe Room": 800000,
+    "Suite Room": 1500000,
+    "Family Room": 1200000
+};
+
+function normalizeRoom(candidate){
+    if(!candidate || !Object.prototype.hasOwnProperty.call(ALLOWED_ROOMS, candidate.nama)){
+        return null;
+    }
+
+    const price = ALLOWED_ROOMS[candidate.nama];
+
+    if(Number(candidate.harga) !== price){
+        return null;
+    }
+
+    return {
+        nama: candidate.nama,
+        harga: price,
+        img: candidate.img || ""
+    };
+}
+
+function safeJsonParse(value){
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        return null;
+    }
+}
+
 function getRoomFromUrl(){
     const params = new URLSearchParams(location.search);
 
@@ -12,7 +44,9 @@ function getRoomFromUrl(){
     };
 }
 
-const room = getRoomFromUrl() || JSON.parse(localStorage.getItem("booking") || localStorage.getItem("room"));
+const room = normalizeRoom(getRoomFromUrl())
+    || normalizeRoom(safeJsonParse(localStorage.getItem("booking")))
+    || normalizeRoom(safeJsonParse(localStorage.getItem("room")));
 
 if(!room){
     alert("Pilih kamar terlebih dahulu!");
@@ -46,6 +80,30 @@ function formatRupiah(value){
     return "Rp " + Number(value).toLocaleString("id-ID");
 }
 
+function setTextCell(row, value){
+    const cell = document.createElement("td");
+    cell.textContent = value || "-";
+    row.appendChild(cell);
+}
+
+function clampNumber(value, min, max){
+    const number = Number(value);
+
+    if(!Number.isFinite(number)){
+        return min;
+    }
+
+    return Math.min(Math.max(number, min), max);
+}
+
+function validGuestEmail(value){
+    return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
+}
+
+function validGuestPhone(value){
+    return /^[0-9+()\-\s]{8,20}$/.test(value);
+}
+
 function makeBookingCode(){
     const random = Math.random().toString(36).slice(2, 7).toUpperCase();
     return "HTL-" + Date.now().toString().slice(-6) + "-" + random;
@@ -54,11 +112,12 @@ function makeBookingCode(){
 function hitung(){
     let ci = new Date(checkin.value);
     let co = new Date(checkout.value);
-    let jumlahKamar = Number(roomCount.value) || 1;
+    let jumlahKamar = clampNumber(roomCount.value, 1, 5);
+    roomCount.value = jumlahKamar;
 
     let hari = (co - ci)/(1000*60*60*24);
 
-    if(hari <= 0){
+    if(hari <= 0 || hari > 30){
         lama.value = "";
         total.value = "";
         totalHarga = 0;
@@ -89,29 +148,54 @@ async function save(){
         return;
     }
 
-    if(!guestName.value || !guestEmail.value || !guestPhone.value || !paymentMethod.value){
+    const nameValue = guestName.value.trim();
+    const emailValue = guestEmail.value.trim().toLowerCase();
+    const phoneValue = guestPhone.value.trim();
+    const guestValue = clampNumber(guestCount.value, 1, 10);
+    const roomValue = clampNumber(roomCount.value, 1, 5);
+    const nightsValue = Number(lama.value);
+
+    guestCount.value = guestValue;
+    roomCount.value = roomValue;
+
+    if(!nameValue || !emailValue || !phoneValue || !paymentMethod.value){
         alert("Lengkapi data pemesan dan metode pembayaran!");
         return;
     }
 
-    if(!checkin.value || !checkout.value || !totalHarga){
+    if(nameValue.length < 2 || nameValue.length > 80){
+        alert("Nama pemesan harus 2-80 karakter.");
+        return;
+    }
+
+    if(!validGuestEmail(emailValue)){
+        alert("Format email tidak valid.");
+        return;
+    }
+
+    if(!validGuestPhone(phoneValue)){
+        alert("Nomor HP harus 8-20 karakter dan hanya berisi angka atau simbol telepon.");
+        return;
+    }
+
+    if(!checkin.value || !checkout.value || !totalHarga || nightsValue < 1 || nightsValue > 30){
         alert("Lengkapi tanggal check-in dan check-out dengan benar!");
         return;
     }
 
     db.collection("bookings").add({
         userId: user.uid,
-        userName: guestName.value,
-        userEmail: guestEmail.value,
-        userPhone: guestPhone.value,
+        userName: nameValue,
+        userEmail: emailValue,
+        userPhone: phoneValue,
         bookingCode: makeBookingCode(),
         room: room.nama,
         roomPrice: room.harga,
         checkin: checkin.value,
         checkout: checkout.value,
-        nights: Number(lama.value),
-        guests: Number(guestCount.value) || 1,
-        rooms: Number(roomCount.value) || 1,
+        nights: nightsValue,
+        guests: guestValue,
+        rooms: roomValue,
         paymentMethod: paymentMethod.value,
         status: "Menunggu Pembayaran",
         total: totalHarga,
@@ -142,20 +226,19 @@ function loadMyBooking(){
     db.collection("bookings")
     .where("userId","==",user.uid)
     .onSnapshot(snapshot => {
-        list.innerHTML = "";
+        list.replaceChildren();
 
         snapshot.forEach(doc => {
             let d = doc.data();
+            const row = document.createElement("tr");
 
-            list.innerHTML += `
-            <tr>
-                <td>${d.bookingCode || "-"}</td>
-                <td>${d.room}</td>
-                <td>${d.checkin} - ${d.checkout}</td>
-                <td>${d.rooms || 1} kamar, ${d.guests || 1} tamu</td>
-                <td>${d.status || "Menunggu Pembayaran"}</td>
-                <td>${formatRupiah(d.total)}</td>
-            </tr>`;
+            setTextCell(row, d.bookingCode);
+            setTextCell(row, d.room);
+            setTextCell(row, `${d.checkin || "-"} - ${d.checkout || "-"}`);
+            setTextCell(row, `${d.rooms || 1} kamar, ${d.guests || 1} tamu`);
+            setTextCell(row, d.status || "Menunggu Pembayaran");
+            setTextCell(row, formatRupiah(d.total));
+            list.appendChild(row);
         });
     });
 }

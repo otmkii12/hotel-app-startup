@@ -19,9 +19,9 @@
     <p id="room" class="mt-2"></p>
 
     <div class="grid grid-cols-1 gap-3 mt-4 sm:grid-cols-2">
-        <input id="guestName" class="min-w-0 border p-2 w-full rounded" placeholder="Nama pemesan">
-        <input type="email" id="guestEmail" class="min-w-0 border p-2 w-full rounded" placeholder="Email">
-        <input type="tel" id="guestPhone" class="min-w-0 border p-2 w-full rounded" placeholder="Nomor HP">
+        <input id="guestName" class="min-w-0 border p-2 w-full rounded" placeholder="Nama pemesan" minlength="2" maxlength="80" autocomplete="name" required>
+        <input type="email" id="guestEmail" class="min-w-0 border p-2 w-full rounded" placeholder="Email" maxlength="120" autocomplete="email" required>
+        <input type="tel" id="guestPhone" class="min-w-0 border p-2 w-full rounded" placeholder="Nomor HP" minlength="8" maxlength="20" autocomplete="tel" required>
         <select id="paymentMethod" class="min-w-0 border p-2 w-full rounded">
             <option value="">Pilih metode pembayaran</option>
             <option value="Transfer Bank">Transfer Bank</option>
@@ -30,8 +30,8 @@
         </select>
         <input type="date" id="checkin" class="min-w-0 border p-2 w-full rounded">
         <input type="date" id="checkout" class="min-w-0 border p-2 w-full rounded">
-        <input type="number" id="guestCount" min="1" value="1" class="min-w-0 border p-2 w-full rounded" placeholder="Jumlah tamu">
-        <input type="number" id="roomCount" min="1" value="1" class="min-w-0 border p-2 w-full rounded" placeholder="Jumlah kamar">
+        <input type="number" id="guestCount" min="1" max="10" value="1" class="min-w-0 border p-2 w-full rounded" placeholder="Jumlah tamu">
+        <input type="number" id="roomCount" min="1" max="5" value="1" class="min-w-0 border p-2 w-full rounded" placeholder="Jumlah kamar">
         <input id="lama" readonly class="min-w-0 border p-2 w-full rounded" placeholder="Lama menginap">
         <input id="total" readonly class="min-w-0 border p-2 w-full rounded" placeholder="Total harga">
     </div>

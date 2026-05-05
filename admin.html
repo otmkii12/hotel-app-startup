@@ -38,14 +38,23 @@
 </main>
 
 <script>
+window.ADMIN_EMAILS = ["rifkiagung874@gmail.com"];
+
+function isAdminUser(user){
+    return user
+        && user.emailVerified === true
+        && window.ADMIN_EMAILS.includes(user.email);
+}
+
 auth.onAuthStateChanged(user => {
     if(!user){
         location.href = "index.html";
         return;
     }
 
-    if(user.email !== "rifkiagung874@gmail.com"){
+    if(!isAdminUser(user)){
         alert("Access denied!");
+        auth.signOut();
         location.href = "index.html";
     }
 });

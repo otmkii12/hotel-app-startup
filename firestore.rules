@@ -2,13 +2,18 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function adminEmails() {
+      return ["rifkiagung874@gmail.com"];
+    }
+
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isAdmin() {
       return isSignedIn()
-        && request.auth.token.email == "rifkiagung874@gmail.com";
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in adminEmails();
     }
 
     function isOwner() {
@@ -16,30 +21,95 @@ service cloud.firestore {
         && resource.data.userId == request.auth.uid;
     }
 
+    function validString(value, min, max) {
+      return value is string
+        && value.size() >= min
+        && value.size() <= max;
+    }
+
+    function validIsoDate(value) {
+      return value is string
+        && value.matches("^\\d{4}-\\d{2}-\\d{2}$");
+    }
+
+    function validRoom(roomName, roomPrice) {
+      return (roomName == "Deluxe Room" && roomPrice == 800000)
+        || (roomName == "Suite Room" && roomPrice == 1500000)
+        || (roomName == "Family Room" && roomPrice == 1200000);
+    }
+
+    function validPaymentMethod(value) {
+      return value in ["Transfer Bank", "Virtual Account", "Bayar di Hotel"];
+    }
+
+    function validBookingFields() {
+      return request.resource.data.keys().hasOnly([
+        "userId",
+        "userName",
+        "userEmail",
+        "userPhone",
+        "bookingCode",
+        "room",
+        "roomPrice",
+        "checkin",
+        "checkout",
+        "nights",
+        "guests",
+        "rooms",
+        "paymentMethod",
+        "status",
+        "total",
+        "createdAt"
+      ]);
+    }
+
     function isCreatingOwnBooking() {
       return isSignedIn()
+        && validBookingFields()
         && request.resource.data.userId == request.auth.uid
-        && request.resource.data.userName is string
-        && request.resource.data.userEmail is string
-        && request.resource.data.userPhone is string
-        && request.resource.data.bookingCode is string
-        && request.resource.data.room is string
+        && validString(request.resource.data.userName, 2, 80)
+        && validString(request.resource.data.userEmail, 5, 120)
+        && request.resource.data.userEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+        && validString(request.resource.data.userPhone, 8, 20)
+        && request.resource.data.userPhone.matches("^[0-9+()\\-\\s]+$")
+        && request.resource.data.bookingCode.matches("^HTL-[0-9]{6}-[A-Z0-9]{5}$")
+        && validString(request.resource.data.room, 2, 60)
         && request.resource.data.roomPrice is number
-        && request.resource.data.checkin is string
-        && request.resource.data.checkout is string
+        && validRoom(request.resource.data.room, request.resource.data.roomPrice)
+        && validIsoDate(request.resource.data.checkin)
+        && validIsoDate(request.resource.data.checkout)
+        && request.resource.data.checkout > request.resource.data.checkin
         && request.resource.data.nights is number
+        && request.resource.data.nights >= 1
+        && request.resource.data.nights <= 30
         && request.resource.data.guests is number
+        && request.resource.data.guests >= 1
+        && request.resource.data.guests <= 10
         && request.resource.data.rooms is number
-        && request.resource.data.paymentMethod is string
+        && request.resource.data.rooms >= 1
+        && request.resource.data.rooms <= 5
+        && validPaymentMethod(request.resource.data.paymentMethod)
         && request.resource.data.status == "Menunggu Pembayaran"
-        && request.resource.data.total is number;
+        && request.resource.data.total is number
+        && request.resource.data.total == request.resource.data.roomPrice * request.resource.data.nights * request.resource.data.rooms
+        && request.resource.data.createdAt == request.time;
+    }
+
+    function isAdminStatusUpdate() {
+      return isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"])
+        && request.resource.data.status in ["Menunggu Pembayaran", "Dikonfirmasi", "Dibatalkan", "Selesai"];
     }
 
     match /bookings/{bookingId} {
       allow create: if isCreatingOwnBooking();
       allow read: if isAdmin() || isOwner();
-      allow update: if isAdmin();
+      allow update: if isAdminStatusUpdate();
       allow delete: if isAdmin();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 }
