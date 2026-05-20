@@ -16,11 +16,6 @@ service cloud.firestore {
         && request.auth.token.email in adminEmails();
     }
 
-    function isOwner() {
-      return isSignedIn()
-        && resource.data.userId == request.auth.uid;
-    }
-
     function validString(value, min, max) {
       return value is string
         && value.size() >= min
@@ -63,7 +58,7 @@ service cloud.firestore {
       ]);
     }
 
-    function isCreatingOwnBooking() {
+    function isCreatingBooking() {
       return isSignedIn()
         && validBookingFields()
         && request.resource.data.userId == request.auth.uid
@@ -95,16 +90,53 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time;
     }
 
+    function validBookingUpdateData() {
+      return validBookingFields()
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.bookingCode == resource.data.bookingCode
+        && request.resource.data.createdAt == resource.data.createdAt
+        && validString(request.resource.data.userName, 2, 80)
+        && validString(request.resource.data.userEmail, 5, 120)
+        && request.resource.data.userEmail.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$")
+        && validString(request.resource.data.userPhone, 8, 20)
+        && request.resource.data.userPhone.matches("^[0-9+()\\-\\s]+$")
+        && request.resource.data.bookingCode.matches("^HTL-[0-9]{6}-[A-Z0-9]{5}$")
+        && validString(request.resource.data.room, 2, 60)
+        && request.resource.data.roomPrice is number
+        && validRoom(request.resource.data.room, request.resource.data.roomPrice)
+        && validIsoDate(request.resource.data.checkin)
+        && validIsoDate(request.resource.data.checkout)
+        && request.resource.data.checkout > request.resource.data.checkin
+        && request.resource.data.nights is number
+        && request.resource.data.nights >= 1
+        && request.resource.data.nights <= 30
+        && request.resource.data.guests is number
+        && request.resource.data.guests >= 1
+        && request.resource.data.guests <= 10
+        && request.resource.data.rooms is number
+        && request.resource.data.rooms >= 1
+        && request.resource.data.rooms <= 5
+        && validPaymentMethod(request.resource.data.paymentMethod)
+        && request.resource.data.status in ["Menunggu Pembayaran", "Dikonfirmasi", "Dibatalkan", "Selesai"]
+        && request.resource.data.total is number
+        && request.resource.data.total == request.resource.data.roomPrice * request.resource.data.nights * request.resource.data.rooms;
+    }
+
     function isAdminStatusUpdate() {
       return isAdmin()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"])
         && request.resource.data.status in ["Menunggu Pembayaran", "Dikonfirmasi", "Dibatalkan", "Selesai"];
     }
 
+    function isAdminBookingUpdate() {
+      return isAdmin()
+        && validBookingUpdateData();
+    }
+
     match /bookings/{bookingId} {
-      allow create: if isCreatingOwnBooking();
-      allow read: if isAdmin() || isOwner();
-      allow update: if isAdminStatusUpdate();
+      allow create: if isCreatingBooking();
+      allow read: if isSignedIn();
+      allow update: if isAdminStatusUpdate() || isAdminBookingUpdate();
       allow delete: if isAdmin();
     }
 

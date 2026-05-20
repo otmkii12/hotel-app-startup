@@ -3,56 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rooms</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<meta http-equiv="refresh" content="0; url=akomodasi.html">
+<title>Dialihkan ke Akomodasi</title>
 </head>
 
-<body class="bg-gray-100">
-
-<nav class="p-4 bg-white shadow flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-    <h1 class="font-bold text-lg">Rooms</h1>
-
-    <div class="grid grid-cols-2 gap-2 text-center sm:flex sm:gap-3">
-        <a href="index.html" class="rounded bg-gray-100 px-3 py-2">Home</a>
-        <a href="akomodasi.html" class="rounded bg-gray-100 px-3 py-2">Akomodasi</a>
-        <a href="gallery.html" class="rounded bg-gray-100 px-3 py-2">Gallery</a>
-        <a href="index.html" class="rounded bg-gray-100 px-3 py-2">Logout</a>
-    </div>
-</nav>
-
-<h2 class="text-2xl text-center mt-6 font-bold sm:text-3xl">Akomodasi</h2>
-
-<div class="grid grid-cols-1 gap-6 p-4 sm:p-6 md:grid-cols-3 md:p-10">
-
-    <div class="bg-white shadow rounded overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1631049035182-249067d7618e" class="h-56 w-full object-cover">
-        <div class="p-4">
-            <h3 class="font-bold">Deluxe Room</h3>
-            <p>Rp 800.000</p>
-            <button onclick="detail('Deluxe Room',800000,'https://images.unsplash.com/photo-1631049035182-249067d7618e')" class="bg-yellow-500 px-3 py-2 mt-2 rounded w-full sm:w-auto">Detail</button>
-        </div>
-    </div>
-
-    <div class="bg-white shadow rounded overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2" class="h-56 w-full object-cover">
-        <div class="p-4">
-            <h3 class="font-bold">Suite Room</h3>
-            <p>Rp 1.500.000</p>
-            <button onclick="detail('Suite Room',1500000,'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2')" class="bg-yellow-500 px-3 py-2 mt-2 rounded w-full sm:w-auto">Detail</button>
-        </div>
-    </div>
-
-    <div class="bg-white shadow rounded overflow-hidden">
-        <img src="https://images.unsplash.com/photo-1611892440504-42a792e24d32" class="h-56 w-full object-cover">
-        <div class="p-4">
-            <h3 class="font-bold">Family Room</h3>
-            <p>Rp 1.200.000</p>
-            <button onclick="detail('Family Room',1200000,'https://images.unsplash.com/photo-1611892440504-42a792e24d32')" class="bg-yellow-500 px-3 py-2 mt-2 rounded w-full sm:w-auto">Detail</button>
-        </div>
-    </div>
-
-</div>
-
-<script src="js/rooms.js?v=2"></script>
+<body>
+<script>
+location.replace("akomodasi.html");
+</script>
+<p>Halaman Rooms sudah dipindahkan ke <a href="akomodasi.html">Akomodasi</a>.</p>
 </body>
 </html>

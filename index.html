@@ -6,31 +6,80 @@
 <title>Luxury Hotel</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="js/firebase.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 
-<body class="bg-gray-100">
+<body class="landing-page bg-gray-100">
 
-<nav class="fixed top-0 z-10 w-full bg-white shadow flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
-    <h1 class="font-bold text-lg">Luxury Hotel</h1>
+<nav class="navbar corner-navbar" aria-label="Navigasi utama">
+    <a href="index.html" class="logo word-logo">
+        <span class="logo-title">Luxury Hotel</span>
+    </a>
 
-    <div class="grid grid-cols-2 gap-2 sm:flex">
-        <a href="rooms.html" class="bg-yellow-500 px-3 py-2 rounded text-center text-sm sm:px-4 sm:py-1">Rooms</a>
-        <a href="akomodasi.html" class="bg-blue-500 px-3 py-2 rounded text-center text-sm text-white sm:px-4 sm:py-1">Akomodasi</a>
-        <a href="gallery.html" class="bg-purple-500 px-3 py-2 rounded text-center text-sm text-white sm:px-4 sm:py-1">Gallery</a>
-        <a href="admin-login.html" class="bg-red-500 px-3 py-2 rounded text-center text-sm text-white sm:px-4 sm:py-1">Admin</a>
+    <button class="menu-toggle" type="button" aria-label="Buka menu" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+    <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="#cek-tanggal">Cek Tanggal</a>
+        <a href="akomodasi.html">Akomodasi</a>
+        <a href="gallery.html">Gallery</a>
+        <a href="admin-login.html">Admin</a>
     </div>
 </nav>
 
-<section class="min-h-screen flex items-center justify-center bg-cover bg-center px-4 pt-28 text-white sm:pt-20"
+<section class="landing-hero min-h-screen flex items-center justify-center bg-cover bg-center px-4 pt-28 text-white sm:pt-20"
 style="background-image:url('https://images.unsplash.com/photo-1566073771259-6a8506099945');">
 
-    <div class="bg-black/50 p-6 text-center rounded w-full max-w-xl sm:p-10">
-        <h1 class="text-4xl font-bold sm:text-5xl">Luxury Experience</h1>
-        <p class="mt-2">Hotel terbaik untuk Anda</p>
+    <div class="landing-panel bg-black/50 p-6 text-center rounded w-full max-w-xl sm:p-10">
+        <h1 class="landing-title text-4xl font-bold sm:text-5xl">Luxury Experience</h1>
+        <p class="landing-copy mt-2">Hotel terbaik untuk Anda</p>
     </div>
 
 </section>
 
+<section class="availability-check" id="cek-tanggal">
+    <div class="availability-inner">
+        <div>
+            <p class="availability-label">Cek Booking</p>
+        </div>
+
+        <form class="availability-form" id="availabilityForm">
+            <label>
+                Kamar
+                <select id="availabilityRoom" required>
+                    <option value="">Pilih kamar</option>
+                    <option value="Deluxe Room">Deluxe Room</option>
+                    <option value="Suite Room">Suite Room</option>
+                    <option value="Family Room">Family Room</option>
+                </select>
+            </label>
+            <label>
+                Check-in
+                <input type="date" id="availabilityCheckin" required>
+            </label>
+            <label>
+                Check-out
+                <input type="date" id="availabilityCheckout" required>
+            </label>
+            <button type="submit">Cek Tanggal</button>
+        </form>
+
+        <p class="availability-result" id="availabilityResult">Masukkan data untuk mengecek ketersediaan kamar.</p>
+        <ul class="booked-list" id="bookedList"></ul>
+    </div>
+</section>
+
+<script src="js/home.js"></script>
 </body>
 </html>

@@ -23,6 +23,7 @@
     <input type="password" id="password" class="border p-2 w-full mb-4" placeholder="Password" autocomplete="current-password" required>
 
     <button onclick="loginAdmin()" class="bg-red-500 text-white px-4 py-2 w-full rounded">Login</button>
+    <button type="button" onclick="resetAdminPassword()" class="text-blue-500 text-sm mt-3 w-full">Lupa Password?</button>
 
     <p id="message" class="text-red-500 mt-4"></p>
     <a href="index.html" class="block text-center mt-4 text-blue-500">Kembali ke Home</a>
@@ -34,6 +35,12 @@ const password = document.getElementById("password");
 const message = document.getElementById("message");
 const ADMIN_EMAILS = ["rifkiagung874@gmail.com"];
 
+auth.languageCode = "id";
+
+function getEmailValue(){
+    return email.value.trim().toLowerCase();
+}
+
 function isAdminUser(user){
     return user
         && user.emailVerified === true
@@ -42,8 +49,9 @@ function isAdminUser(user){
 
 function loginAdmin(){
     message.innerText = "";
+    message.className = "text-red-500 mt-4";
 
-    auth.signInWithEmailAndPassword(email.value.trim().toLowerCase(), password.value)
+    auth.signInWithEmailAndPassword(getEmailValue(), password.value)
     .then(credential => {
         if(!isAdminUser(credential.user)){
             auth.signOut();
@@ -55,6 +63,54 @@ function loginAdmin(){
     })
     .catch(error => {
         message.innerText = "Login gagal. Periksa email dan password.";
+    });
+}
+
+function getResetPasswordErrorMessage(error){
+    if(error.code === "auth/user-not-found"){
+        return "Akun dengan email ini belum ada di Firebase Authentication.";
+    }
+
+    if(error.code === "auth/invalid-email"){
+        return "Format email tidak valid.";
+    }
+
+    if(error.code === "auth/unauthorized-domain"){
+        return "Domain aplikasi belum diizinkan di Firebase Authentication.";
+    }
+
+    if(error.code === "auth/too-many-requests"){
+        return "Terlalu banyak percobaan. Tunggu beberapa saat lalu coba lagi.";
+    }
+
+    return `Gagal mengirim link reset password: ${error.message}`;
+}
+
+function resetAdminPassword(){
+    const adminEmail = getEmailValue();
+    message.className = "text-red-500 mt-4";
+    message.innerText = "";
+
+    if(!adminEmail){
+        message.innerText = "Masukkan email admin terlebih dahulu.";
+        email.focus();
+        return;
+    }
+
+    if(!ADMIN_EMAILS.includes(adminEmail)){
+        message.innerText = "Email ini tidak terdaftar sebagai admin.";
+        email.focus();
+        return;
+    }
+
+    auth.sendPasswordResetEmail(adminEmail)
+    .then(() => {
+        message.className = "text-green-600 mt-4";
+        message.innerText = "Jika akun admin terdaftar, link reset password akan dikirim ke email tersebut. Cek inbox dan spam.";
+    })
+    .catch(error => {
+        message.className = "text-red-500 mt-4";
+        message.innerText = getResetPasswordErrorMessage(error);
     });
 }
 </script>

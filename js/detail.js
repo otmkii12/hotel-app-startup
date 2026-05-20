@@ -16,7 +16,7 @@ let room = getRoomFromUrl() || JSON.parse(localStorage.getItem("room"));
 
 if(!room){
     alert("Pilih kamar terlebih dahulu!");
-    location.href = "rooms.html";
+    location.href = "akomodasi.html";
     throw new Error("Room data is missing");
 }
 
