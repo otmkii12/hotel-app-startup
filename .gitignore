@@ -6,7 +6,6 @@ yarn-debug.log*
 yarn-error.log*
 firebase-debug.log*
 firebase-debug.*.log*
-
 # Firebase cache
 .firebase/
 
@@ -67,3 +66,27 @@ node_modules/
 
 # dataconnect generated files
 .dataconnect
+
+# Docker volumes and data
+docker/mysql-data/
+docker/mysql-data/**
+.docker-compose.cache
+
+# Environment files (local overrides)
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# PHP vendor directory
+vendor/
+
+# OS
+.DS_Store
+Thumbs.db
+
