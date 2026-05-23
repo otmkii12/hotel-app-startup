@@ -220,11 +220,22 @@ function renderBookingRow(id, d){
 
     const userCell = document.createElement("td");
     userCell.className = "border-t px-3 py-3 align-top";
-    userCell.innerHTML = `
-        <strong class="block text-gray-900">${d.userName || "-"}</strong>
-        <span class="block text-xs text-gray-500">${d.userEmail || "-"}</span>
-        <span class="block text-xs text-gray-500">${d.userPhone || "-"}</span>
-    `;
+    const userName = document.createElement("strong");
+    const userEmail = document.createElement("span");
+    const userPhone = document.createElement("span");
+    const userMessage = document.createElement("span");
+
+    userName.className = "block text-gray-900";
+    userEmail.className = "block text-xs text-gray-500";
+    userPhone.className = "block text-xs text-gray-500";
+    userMessage.className = "mt-2 block text-xs text-gray-600";
+
+    userName.textContent = d.userName || "-";
+    userEmail.textContent = d.userEmail || "-";
+    userPhone.textContent = d.userPhone || "-";
+    userMessage.textContent = "Pesan: " + (d.message || "Tidak ada pesan khusus");
+
+    userCell.append(userName, userEmail, userPhone, userMessage);
     row.appendChild(userCell);
 
     setTextCell(row, d.room);

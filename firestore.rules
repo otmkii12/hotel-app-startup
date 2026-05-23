@@ -37,6 +37,11 @@ service cloud.firestore {
       return value in ["Transfer Bank", "Virtual Account", "Bayar di Hotel"];
     }
 
+    function validOptionalMessage() {
+      return !request.resource.data.keys().hasAny(["message"])
+        || validString(request.resource.data.message, 0, 300);
+    }
+
     function validBookingFields() {
       return request.resource.data.keys().hasOnly([
         "userId",
@@ -52,15 +57,17 @@ service cloud.firestore {
         "guests",
         "rooms",
         "paymentMethod",
+        "message",
         "status",
         "total",
         "createdAt"
       ]);
     }
 
-    function isCreatingBooking() {
+    function isCreatingBooking(bookingId) {
       return isSignedIn()
         && validBookingFields()
+        && bookingId == request.resource.data.bookingCode
         && request.resource.data.userId == request.auth.uid
         && validString(request.resource.data.userName, 2, 80)
         && validString(request.resource.data.userEmail, 5, 120)
@@ -84,6 +91,7 @@ service cloud.firestore {
         && request.resource.data.rooms >= 1
         && request.resource.data.rooms <= 5
         && validPaymentMethod(request.resource.data.paymentMethod)
+        && validOptionalMessage()
         && request.resource.data.status == "Menunggu Pembayaran"
         && request.resource.data.total is number
         && request.resource.data.total == request.resource.data.roomPrice * request.resource.data.nights * request.resource.data.rooms
@@ -117,6 +125,7 @@ service cloud.firestore {
         && request.resource.data.rooms >= 1
         && request.resource.data.rooms <= 5
         && validPaymentMethod(request.resource.data.paymentMethod)
+        && validOptionalMessage()
         && request.resource.data.status in ["Menunggu Pembayaran", "Dikonfirmasi", "Dibatalkan", "Selesai"]
         && request.resource.data.total is number
         && request.resource.data.total == request.resource.data.roomPrice * request.resource.data.nights * request.resource.data.rooms;
@@ -133,10 +142,38 @@ service cloud.firestore {
         && validBookingUpdateData();
     }
 
+    function isOwnerCancelUpdate() {
+      return isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && resource.data.status in ["Menunggu Pembayaran", "Dikonfirmasi"]
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"])
+        && request.resource.data.status == "Dibatalkan";
+    }
+
+    function isBookingCodeCancelUpdate(bookingId) {
+      return isSignedIn()
+        && bookingId == resource.data.bookingCode
+        && resource.data.status in ["Menunggu Pembayaran", "Dikonfirmasi"]
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status"])
+        && request.resource.data.status == "Dibatalkan";
+    }
+
+    function isOwnerBooking() {
+      return isSignedIn()
+        && resource.data.userId == request.auth.uid;
+    }
+
+    function isBookingCodeDocument(bookingId) {
+      return isSignedIn()
+        && bookingId == resource.data.bookingCode
+        && resource.data.bookingCode.matches("^HTL-[0-9]{6}-[A-Z0-9]{5}$");
+    }
+
     match /bookings/{bookingId} {
-      allow create: if isCreatingBooking();
-      allow read: if isSignedIn();
-      allow update: if isAdminStatusUpdate() || isAdminBookingUpdate();
+      allow create: if isCreatingBooking(bookingId);
+      allow get: if isAdmin() || isOwnerBooking() || isBookingCodeDocument(bookingId);
+      allow list: if isAdmin();
+      allow update: if isOwnerCancelUpdate() || isBookingCodeCancelUpdate(bookingId) || isAdminStatusUpdate() || isAdminBookingUpdate();
       allow delete: if isAdmin();
     }
 

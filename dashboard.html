@@ -16,35 +16,121 @@
 <main class="mx-auto w-full max-w-4xl bg-white p-4 shadow rounded sm:p-6">
     <h2 class="text-2xl font-bold sm:text-3xl">Booking Hotel</h2>
 
-    <p id="room" class="mt-2"></p>
+    <p id="room" class="mt-2 font-semibold text-yellow-700"></p>
+    <p id="bookingFormNotice" class="mt-2 hidden rounded bg-yellow-50 p-3 text-sm text-yellow-800"></p>
 
-    <div class="grid grid-cols-1 gap-3 mt-4 sm:grid-cols-2">
-        <input id="guestName" class="min-w-0 border p-2 w-full rounded" placeholder="Nama pemesan" minlength="2" maxlength="80" autocomplete="name" required>
-        <input type="email" id="guestEmail" class="min-w-0 border p-2 w-full rounded" placeholder="Email" maxlength="120" autocomplete="email" required>
-        <input type="tel" id="guestPhone" class="min-w-0 border p-2 w-full rounded" placeholder="Nomor HP" minlength="8" maxlength="20" autocomplete="tel" required>
-        <select id="paymentMethod" class="min-w-0 border p-2 w-full rounded">
-            <option value="">Pilih metode pembayaran</option>
-            <option value="Transfer Bank">Transfer Bank</option>
-            <option value="Virtual Account">Virtual Account</option>
-            <option value="Bayar di Hotel">Bayar di Hotel</option>
-        </select>
-        <input type="date" id="checkin" class="min-w-0 border p-2 w-full rounded">
-        <input type="date" id="checkout" class="min-w-0 border p-2 w-full rounded">
-        <input type="number" id="guestCount" min="1" max="10" value="1" class="min-w-0 border p-2 w-full rounded" placeholder="Jumlah tamu">
-        <input type="number" id="roomCount" min="1" max="5" value="1" class="min-w-0 border p-2 w-full rounded" placeholder="Jumlah kamar">
-        <input id="lama" readonly class="min-w-0 border p-2 w-full rounded" placeholder="Lama menginap">
-        <input id="total" readonly class="min-w-0 border p-2 w-full rounded" placeholder="Total harga">
-    </div>
+    <section id="bookingForm" class="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Nama pemesan</span>
+            <input id="guestName" class="min-w-0 border p-2 w-full rounded" placeholder="Contoh: Andi Saputra" minlength="2" maxlength="80" autocomplete="name" required>
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Email pemesan</span>
+            <input type="email" id="guestEmail" class="min-w-0 border p-2 w-full rounded" placeholder="nama@email.com" maxlength="120" autocomplete="email" required>
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Nomor HP</span>
+            <input type="tel" id="guestPhone" class="min-w-0 border p-2 w-full rounded" placeholder="08xxxxxxxxxx" minlength="8" maxlength="20" autocomplete="tel" required>
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Metode pembayaran</span>
+            <select id="paymentMethod" class="min-w-0 border p-2 w-full rounded" required>
+                <option value="">Pilih metode pembayaran</option>
+                <option value="Transfer Bank">Transfer Bank</option>
+                <option value="Virtual Account">Virtual Account</option>
+                <option value="Bayar di Hotel">Bayar di Hotel</option>
+            </select>
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Check-in</span>
+            <input type="date" id="checkin" class="min-w-0 border p-2 w-full rounded" required>
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Check-out</span>
+            <input type="date" id="checkout" class="min-w-0 border p-2 w-full rounded" required>
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Jumlah tamu</span>
+            <input type="number" id="guestCount" min="1" max="10" value="1" class="min-w-0 border p-2 w-full rounded" required>
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Jumlah kamar</span>
+            <input type="number" id="roomCount" min="1" max="5" value="1" class="min-w-0 border p-2 w-full rounded" required>
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Lama menginap</span>
+            <input id="lama" readonly class="min-w-0 border bg-gray-100 p-2 w-full rounded" placeholder="Otomatis terhitung">
+        </label>
+
+        <label class="block">
+            <span class="mb-1 block text-sm font-medium">Total harga</span>
+            <input id="total" readonly class="min-w-0 border bg-gray-100 p-2 w-full rounded" placeholder="Otomatis terhitung">
+        </label>
+
+        <label class="block sm:col-span-2">
+            <span class="mb-1 block text-sm font-medium">Pesan / permintaan khusus</span>
+            <textarea id="bookingMessage" class="min-h-24 min-w-0 border p-2 w-full rounded" maxlength="300" placeholder="Contoh: minta kamar non-smoking, late check-in, atau catatan lain."></textarea>
+        </label>
+    </section>
+
+    <section class="mt-5 rounded border bg-gray-50 p-4">
+        <h3 class="font-bold">Ringkasan Booking</h3>
+        <dl id="bookingSummary" class="mt-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2"></dl>
+    </section>
+
+    <div id="bookingResult" class="mt-5 hidden rounded border border-green-200 bg-green-50 p-4 text-sm text-green-900"></div>
 
     <button id="bookingButton" type="button" class="bg-green-500 text-white px-4 py-2 mt-4 w-full rounded sm:w-auto">Booking</button>
 
-    <div class="mt-5 w-full overflow-x-auto">
-        <table class="w-full min-w-[760px] border text-sm">
-            <tbody id="list"></tbody>
-        </table>
-    </div>
+    <section class="mt-8 rounded border bg-white p-4">
+        <div>
+            <h3 class="text-xl font-bold">Cek Pesanan Saya</h3>
+            <p class="text-sm text-gray-600">Masukkan email dan kode booking yang digunakan saat pemesanan.</p>
+        </div>
+
+        <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <label class="block">
+                <span class="mb-1 block text-sm font-medium">Email pemesan</span>
+                <input type="email" id="lookupEmail" class="w-full rounded border p-2" placeholder="nama@email.com">
+            </label>
+
+            <label class="block">
+                <span class="mb-1 block text-sm font-medium">Kode booking</span>
+                <input id="lookupCode" class="w-full rounded border p-2 uppercase" placeholder="HTL-123456-ABCDE">
+            </label>
+
+            <button id="refreshMyBookings" type="button" class="rounded bg-gray-900 px-4 py-2 text-sm font-semibold text-white">Cek Booking</button>
+        </div>
+
+        <p id="myBookingsMessage" class="mt-4 text-sm text-gray-600">Data pesanan akan muncul setelah email dan kode booking cocok.</p>
+
+        <div class="mt-4 w-full overflow-x-auto">
+            <table class="w-full min-w-[900px] border text-sm">
+                <thead class="bg-gray-900 text-left text-white">
+                    <tr>
+                        <th class="px-3 py-3 font-semibold">Kode</th>
+                        <th class="px-3 py-3 font-semibold">Kamar</th>
+                        <th class="px-3 py-3 font-semibold">Tanggal</th>
+                        <th class="px-3 py-3 font-semibold">Tamu/Kamar</th>
+                        <th class="px-3 py-3 font-semibold">Total</th>
+                        <th class="px-3 py-3 font-semibold">Status</th>
+                        <th class="px-3 py-3 font-semibold">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody id="myBookingList"></tbody>
+            </table>
+        </div>
+    </section>
 </main>
 
-<script src="js/app.js?v=5"></script>
+<script src="js/app.js?v=7"></script>
 </body>
 </html>
