@@ -12,7 +12,15 @@ function getRoomFromUrl(){
     };
 }
 
-let room = getRoomFromUrl() || JSON.parse(localStorage.getItem("room"));
+function safeJsonParse(value){
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        return null;
+    }
+}
+
+let room = getRoomFromUrl() || safeJsonParse(localStorage.getItem("room"));
 
 if(!room){
     alert("Pilih kamar terlebih dahulu!");

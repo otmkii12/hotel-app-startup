@@ -50,6 +50,29 @@ echo json_encode($response);
 $conn->close();
 
 /**
+ * Find or create a user record by firebase_uid to satisfy foreign key constraint
+ */
+function findOrCreateUser($conn, $firebase_uid, $user_name, $user_email, $user_phone) {
+    $stmt = $conn->prepare("SELECT id FROM users WHERE firebase_uid = ?");
+    $stmt->bind_param("s", $firebase_uid);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+        return (int) $row['id'];
+    }
+
+    $stmt = $conn->prepare("INSERT INTO users (firebase_uid, email, phone, name) VALUES (?, ?, ?, ?)");
+    $stmt->bind_param("ssss", $firebase_uid, $user_email, $user_phone, $user_name);
+
+    if ($stmt->execute()) {
+        return (int) $conn->insert_id;
+    }
+
+    return null;
+}
+
+/**
  * Handle GET requests
  */
 function handleGet($conn) {
@@ -130,11 +153,19 @@ function handlePost($conn) {
         return ['success' => false, 'message' => 'Checkout date must be after checkin date'];
     }
 
+    // Resolve or create user_id from firebase_uid
+    $user_id = findOrCreateUser($conn, $data['firebase_uid'], $data['user_name'], $data['user_email'], $data['user_phone']);
+
+    if (!$user_id) {
+        http_response_code(500);
+        return ['success' => false, 'message' => 'Failed to resolve user account'];
+    }
+
     // Insert booking
-    $query = "INSERT INTO bookings (firebase_uid, user_name, user_email, user_phone, booking_code, 
+    $query = "INSERT INTO bookings (firebase_uid, user_id, user_name, user_email, user_phone, booking_code, 
                                    room, room_price, checkin, checkout, nights, guests, rooms, 
                                    payment_method, status, total) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Menunggu Pembayaran', ?)";
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Menunggu Pembayaran', ?)";
 
     $stmt = $conn->prepare($query);
 
@@ -143,8 +174,9 @@ function handlePost($conn) {
         return ['success' => false, 'message' => 'Database error: ' . $conn->error];
     }
 
-    $stmt->bind_param("sssssssssiiiss",
+    $stmt->bind_param("sisssssissiiisi",
         $data['firebase_uid'],
+        $user_id,
         $data['user_name'],
         $data['user_email'],
         $data['user_phone'],
