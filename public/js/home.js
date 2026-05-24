@@ -32,7 +32,6 @@ if (bookingForm) {
 function setAvailabilityMessage(message, status) {
     availabilityResult.textContent = message;
     availabilityResult.className = "availability-result";
-
     if (status) {
         availabilityResult.classList.add(status);
     }
@@ -42,18 +41,13 @@ function dateRangesOverlap(startDate, endDate, bookedStart, bookedEnd) {
     return startDate < bookedEnd && endDate > bookedStart;
 }
 
-function renderBookedList(bookings) {
+function renderBookedList(conflicting) {
     bookedList.replaceChildren();
-
-    bookings.forEach((booking) => {
+    conflicting.forEach(booking => {
         const item = document.createElement("li");
         item.textContent = `${booking.checkin} sampai ${booking.checkout} - ${booking.status || "Menunggu Pembayaran"}`;
         bookedList.appendChild(item);
     });
-}
-
-function getAvailabilityUser() {
-    return auth.currentUser || auth.signInAnonymously().then((result) => result.user);
 }
 
 async function checkAvailability(event) {
@@ -81,40 +75,14 @@ async function checkAvailability(event) {
     setAvailabilityMessage("Sedang mengecek data booking...", "");
 
     try {
-        await getAvailabilityUser();
+        const result = await api.checkAvailability(room, checkin, checkout);
 
-        const snapshot = await db.collection("bookings")
-            .where("room", "==", room)
-            .get();
-
-        const selectedStart = new Date(checkin);
-        const selectedEnd = new Date(checkout);
-        const usedBookings = [];
-
-        snapshot.forEach((doc) => {
-            const booking = doc.data();
-
-            if (!booking.checkin || !booking.checkout || booking.status === "Dibatalkan") {
-                return;
-            }
-
-            if (dateRangesOverlap(
-                selectedStart,
-                selectedEnd,
-                new Date(booking.checkin),
-                new Date(booking.checkout)
-            )) {
-                usedBookings.push(booking);
-            }
-        });
-
-        if (usedBookings.length > 0) {
-            setAvailabilityMessage("Tanggal tersebut sudah dipakai atau sudah dibooking untuk kamar ini.", "unavailable");
-            renderBookedList(usedBookings);
-            return;
+        if (result.data.available) {
+            setAvailabilityMessage("Tanggal tersebut masih tersedia untuk kamar ini.", "available");
+        } else {
+            setAvailabilityMessage("Tanggal tersebut sudah dipakai untuk kamar ini.", "unavailable");
+            renderBookedList(result.data.conflicting_bookings || []);
         }
-
-        setAvailabilityMessage("Tanggal tersebut masih tersedia untuk kamar ini.", "available");
     } catch (error) {
         setAvailabilityMessage("Gagal mengecek data booking: " + error.message, "error");
     } finally {

@@ -4,39 +4,26 @@ const ALLOWED_ROOMS = {
     "Family Room": 1200000
 };
 
-function normalizeRoom(candidate){
-    if(!candidate || !Object.prototype.hasOwnProperty.call(ALLOWED_ROOMS, candidate.nama)){
+function normalizeRoom(candidate) {
+    if (!candidate || !Object.prototype.hasOwnProperty.call(ALLOWED_ROOMS, candidate.nama)) {
         return null;
     }
-
     const price = ALLOWED_ROOMS[candidate.nama];
-
-    if(Number(candidate.harga) !== price){
+    if (Number(candidate.harga) !== price) {
         return null;
     }
-
-    return {
-        nama: candidate.nama,
-        harga: price,
-        img: candidate.img || ""
-    };
+    return { nama: candidate.nama, harga: price, img: candidate.img || "" };
 }
 
-function safeJsonParse(value){
-    try {
-        return JSON.parse(value);
-    } catch (error) {
-        return null;
-    }
+function safeJsonParse(value) {
+    try { return JSON.parse(value); } catch (e) { return null; }
 }
 
-function getRoomFromUrl(){
+function getRoomFromUrl() {
     const params = new URLSearchParams(location.search);
-
-    if(!params.has("nama") || !params.has("harga") || !params.has("img")){
+    if (!params.has("nama") || !params.has("harga") || !params.has("img")) {
         return null;
     }
-
     return {
         nama: params.get("nama"),
         harga: Number(params.get("harga")),
@@ -48,7 +35,7 @@ const room = normalizeRoom(getRoomFromUrl())
     || normalizeRoom(safeJsonParse(localStorage.getItem("booking")))
     || normalizeRoom(safeJsonParse(localStorage.getItem("room")));
 
-if(!room){
+if (!room) {
     alert("Pilih kamar terlebih dahulu!");
     location.href = "akomodasi.html";
     throw new Error("Booking room data is missing");
@@ -70,57 +57,50 @@ const total = document.getElementById("total");
 const bookingButton = document.getElementById("bookingButton");
 let totalHarga = 0;
 
-document.getElementById("room").innerText =
-room.nama + " - " + formatRupiah(room.harga);
+document.getElementById("room").innerText = room.nama + " - " + formatRupiah(room.harga);
 
 const today = new Date().toISOString().split("T")[0];
 checkin.min = today;
 checkout.min = today;
 
-function formatRupiah(value){
+function formatRupiah(value) {
     return "Rp " + Number(value).toLocaleString("id-ID");
 }
 
-function clampNumber(value, min, max){
+function clampNumber(value, min, max) {
     const number = Number(value);
-
-    if(!Number.isFinite(number)){
-        return min;
-    }
-
+    if (!Number.isFinite(number)) return min;
     return Math.min(Math.max(number, min), max);
 }
 
-function validGuestEmail(value){
+function validGuestEmail(value) {
     return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
 }
 
-function validGuestPhone(value){
+function validGuestPhone(value) {
     return /^[0-9+()\-\s]{8,20}$/.test(value);
 }
 
-function makeBookingCode(){
+function makeBookingCode() {
     const random = Math.random().toString(36).slice(2, 7).toUpperCase();
     return "HTL-" + Date.now().toString().slice(-6) + "-" + random;
 }
 
-function getAuthErrorMessage(error){
-    if(error && error.code === "auth/admin-restricted-operation"){
+function getAuthErrorMessage(error) {
+    if (error && error.code === "auth/admin-restricted-operation") {
         return "Login tamu belum diaktifkan. Aktifkan provider Anonymous di Firebase Authentication.";
     }
-
     return error.message;
 }
 
-function hitung(){
-    let ci = new Date(checkin.value);
-    let co = new Date(checkout.value);
-    let jumlahKamar = clampNumber(roomCount.value, 1, 5);
+function hitung() {
+    const ci = new Date(checkin.value);
+    const co = new Date(checkout.value);
+    const jumlahKamar = clampNumber(roomCount.value, 1, 5);
     roomCount.value = jumlahKamar;
+    const hari = (co - ci) / (1000 * 60 * 60 * 24);
 
-    let hari = (co - ci)/(1000*60*60*24);
-
-    if(hari <= 0 || hari > 30){
+    if (hari <= 0 || hari > 30) {
         lama.value = "";
         total.value = "";
         totalHarga = 0;
@@ -137,18 +117,18 @@ checkout.onchange = hitung;
 roomCount.onchange = hitung;
 roomCount.oninput = hitung;
 
-function setBookingLoading(isLoading){
+function setBookingLoading(isLoading) {
     bookingButton.disabled = isLoading;
     bookingButton.textContent = isLoading ? "Menyimpan..." : "Booking";
     bookingButton.classList.toggle("opacity-70", isLoading);
     bookingButton.classList.toggle("cursor-not-allowed", isLoading);
 }
 
-function getUser(){
+function getUser() {
     return auth.currentUser || auth.signInAnonymously().then(result => result.user);
 }
 
-async function save(){
+async function save() {
     hitung();
 
     const nameValue = guestName.value.trim();
@@ -161,27 +141,27 @@ async function save(){
     guestCount.value = guestValue;
     roomCount.value = roomValue;
 
-    if(!nameValue || !emailValue || !phoneValue || !paymentMethod.value){
+    if (!nameValue || !emailValue || !phoneValue || !paymentMethod.value) {
         alert("Lengkapi data pemesan dan metode pembayaran!");
         return;
     }
 
-    if(nameValue.length < 2 || nameValue.length > 80){
+    if (nameValue.length < 2 || nameValue.length > 80) {
         alert("Nama pemesan harus 2-80 karakter.");
         return;
     }
 
-    if(!validGuestEmail(emailValue)){
+    if (!validGuestEmail(emailValue)) {
         alert("Format email tidak valid.");
         return;
     }
 
-    if(!validGuestPhone(phoneValue)){
+    if (!validGuestPhone(phoneValue)) {
         alert("Nomor HP harus 8-20 karakter dan hanya berisi angka atau simbol telepon.");
         return;
     }
 
-    if(!checkin.value || !checkout.value || !totalHarga || nightsValue < 1 || nightsValue > 30){
+    if (!checkin.value || !checkout.value || !totalHarga || nightsValue < 1 || nightsValue > 30) {
         alert("Lengkapi tanggal check-in dan check-out dengan benar!");
         return;
     }
@@ -190,25 +170,24 @@ async function save(){
 
     try {
         const user = await getUser();
-
-        await db.collection("bookings").add({
-            userId: user.uid,
-            userName: nameValue,
-            userEmail: emailValue,
-            userPhone: phoneValue,
-            bookingCode: makeBookingCode(),
+        const bookingData = {
+            firebase_uid: user.uid,
+            user_name: nameValue,
+            user_email: emailValue,
+            user_phone: phoneValue,
+            booking_code: makeBookingCode(),
             room: room.nama,
-            roomPrice: room.harga,
+            room_price: room.harga,
             checkin: checkin.value,
             checkout: checkout.value,
             nights: nightsValue,
             guests: guestValue,
             rooms: roomValue,
-            paymentMethod: paymentMethod.value,
-            status: "Menunggu Pembayaran",
-            total: totalHarga,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
+            payment_method: paymentMethod.value,
+            total: totalHarga
+        };
+
+        await api.createBooking(bookingData);
 
         alert("Booking berhasil!");
         guestName.value = "";
@@ -223,14 +202,15 @@ async function save(){
         total.value = "";
         totalHarga = 0;
     } catch (error) {
-        if(error && error.code && error.code.startsWith("auth/")){
+        if (error && error.code && error.code.startsWith("auth/")) {
             alert("Gagal menyiapkan login tamu: " + getAuthErrorMessage(error));
-        }else{
+        } else {
             alert("Booking gagal: " + error.message);
         }
     } finally {
         setBookingLoading(false);
     }
 }
+
 bookingButton.addEventListener("click", save);
 window.save = save;

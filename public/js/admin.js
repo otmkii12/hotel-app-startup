@@ -1,12 +1,8 @@
 const table = document.getElementById("adminList");
-window.ADMIN_EMAILS = window.ADMIN_EMAILS || ["rifkiagung874@gmail.com"];
 const bookingSearch = document.getElementById("bookingSearch");
 const emptySearchMessage = document.getElementById("emptySearchMessage");
-const ALLOWED_ROOMS = {
-    "Deluxe Room": 800000,
-    "Suite Room": 1500000,
-    "Family Room": 1200000
-};
+const ROOM_ORDER = ["Deluxe Room", "Suite Room", "Family Room"];
+
 const editModal = document.getElementById("editModal");
 const editForm = document.getElementById("editForm");
 const editId = document.getElementById("editId");
@@ -23,20 +19,20 @@ const editStatus = document.getElementById("editStatus");
 const editNightsPreview = document.getElementById("editNightsPreview");
 const editTotalPreview = document.getElementById("editTotalPreview");
 const saveEdit = document.getElementById("saveEdit");
-let bookings = [];
-const ROOM_ORDER = ["Deluxe Room", "Suite Room", "Family Room"];
 
-function formatRupiah(value){
+const ALLOWED_ROOMS = {
+    "Deluxe Room": 800000,
+    "Suite Room": 1500000,
+    "Family Room": 1200000
+};
+
+let bookings = [];
+
+function formatRupiah(value) {
     return "Rp " + Number(value).toLocaleString("id-ID");
 }
 
-function isAdminUser(user){
-    return user
-        && user.emailVerified === true
-        && window.ADMIN_EMAILS.includes(user.email);
-}
-
-function setTextCell(row, value){
+function setTextCell(row, value) {
     const cell = document.createElement("td");
     cell.className = "border-t px-3 py-3 align-top";
     cell.textContent = value || "-";
@@ -44,7 +40,7 @@ function setTextCell(row, value){
     return cell;
 }
 
-function makeButton(label, className, onClick){
+function makeButton(label, className, onClick) {
     const button = document.createElement("button");
     button.type = "button";
     button.textContent = label;
@@ -53,57 +49,47 @@ function makeButton(label, className, onClick){
     return button;
 }
 
-function validEmail(value){
+function validEmail(value) {
     return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(value);
 }
 
-function validPhone(value){
+function validPhone(value) {
     return /^[0-9+()\-\s]{8,20}$/.test(value);
 }
 
-function clampNumber(value, min, max){
+function clampNumber(value, min, max) {
     const number = Number(value);
-
-    if(!Number.isFinite(number)){
-        return min;
-    }
-
+    if (!Number.isFinite(number)) return min;
     return Math.min(Math.max(number, min), max);
 }
 
-function calculateEditedBooking(){
+function calculateEditedBooking() {
     const checkinDate = new Date(editCheckin.value);
     const checkoutDate = new Date(editCheckout.value);
     const roomName = editRoom.value;
     const roomPrice = ALLOWED_ROOMS[roomName] || 0;
-    const roomCount = clampNumber(editRooms.value, 1, 5);
+    const roomCnt = clampNumber(editRooms.value, 1, 5);
     const nights = (checkoutDate - checkinDate) / (1000 * 60 * 60 * 24);
 
-    if(!roomPrice || !editCheckin.value || !editCheckout.value || nights < 1 || nights > 30){
+    if (!roomPrice || !editCheckin.value || !editCheckout.value || nights < 1 || nights > 30) {
         return null;
     }
 
-    return {
-        roomPrice,
-        nights,
-        total: roomPrice * nights * roomCount
-    };
+    return { roomPrice, nights, total: roomPrice * nights * roomCnt };
 }
 
-function updateEditPreview(){
-    const calculation = calculateEditedBooking();
-
-    if(!calculation){
+function updateEditPreview() {
+    const calc = calculateEditedBooking();
+    if (!calc) {
         editNightsPreview.textContent = "-";
         editTotalPreview.textContent = "-";
         return;
     }
-
-    editNightsPreview.textContent = calculation.nights;
-    editTotalPreview.textContent = formatRupiah(calculation.total);
+    editNightsPreview.textContent = calc.nights;
+    editTotalPreview.textContent = formatRupiah(calc.total);
 }
 
-function closeEditModal(){
+function closeEditModal() {
     editModal.classList.add("hidden");
     editModal.classList.remove("flex");
     editForm.reset();
@@ -111,17 +97,17 @@ function closeEditModal(){
     updateEditPreview();
 }
 
-function openEditModal(id, data){
+function openEditModal(id, data) {
     editId.value = id;
-    editUserName.value = data.userName || "";
-    editUserEmail.value = data.userEmail || "";
-    editUserPhone.value = data.userPhone || "";
+    editUserName.value = data.user_name || "";
+    editUserEmail.value = data.user_email || "";
+    editUserPhone.value = data.user_phone || "";
     editRoom.value = data.room || "Deluxe Room";
     editCheckin.value = data.checkin || "";
     editCheckout.value = data.checkout || "";
     editGuests.value = data.guests || 1;
     editRooms.value = data.rooms || 1;
-    editPaymentMethod.value = data.paymentMethod || "Transfer Bank";
+    editPaymentMethod.value = data.payment_method || "Transfer Bank";
     editStatus.value = data.status || "Menunggu Pembayaran";
     updateEditPreview();
 
@@ -129,34 +115,24 @@ function openEditModal(id, data){
     editModal.classList.add("flex");
 }
 
-function setEditLoading(isLoading){
+function setEditLoading(isLoading) {
     saveEdit.disabled = isLoading;
     saveEdit.textContent = isLoading ? "Menyimpan..." : "Simpan";
     saveEdit.classList.toggle("opacity-70", isLoading);
     saveEdit.classList.toggle("cursor-not-allowed", isLoading);
 }
 
-function bookingMatchesSearch(data, keyword){
-    if(!keyword){
-        return true;
-    }
-
+function bookingMatchesSearch(data, keyword) {
+    if (!keyword) return true;
     const searchableText = [
-        data.bookingCode,
-        data.userName,
-        data.userEmail,
-        data.userPhone,
-        data.room,
-        data.checkin,
-        data.checkout,
-        data.status,
-        data.paymentMethod
+        data.booking_code, data.user_name, data.user_email,
+        data.user_phone, data.room, data.checkin, data.checkout,
+        data.status, data.payment_method
     ].join(" ").toLowerCase();
-
     return searchableText.includes(keyword);
 }
 
-function makeStatusBadge(status){
+function makeStatusBadge(status) {
     const value = status || "Menunggu Pembayaran";
     const badge = document.createElement("span");
     const colorMap = {
@@ -165,65 +141,56 @@ function makeStatusBadge(status){
         "Dibatalkan": "bg-red-100 text-red-800",
         "Selesai": "bg-blue-100 text-blue-800"
     };
-
-    badge.className = `inline-flex rounded px-2 py-1 text-xs font-semibold ${colorMap[value] || "bg-gray-100 text-gray-700"}`;
+    badge.className = "inline-flex rounded px-2 py-1 text-xs font-semibold " + (colorMap[value] || "bg-gray-100 text-gray-700");
     badge.textContent = value;
-
     return badge;
 }
 
-function groupBookingsByRoom(items){
-    return items.reduce((groups, booking) => {
-        const roomName = booking.data.room || "Kamar Tidak Diketahui";
-
-        if(!groups[roomName]){
-            groups[roomName] = [];
-        }
-
-        groups[roomName].push(booking);
+function groupBookingsByRoom(items) {
+    return items.reduce((groups, item) => {
+        const roomName = item.room || "Kamar Tidak Diketahui";
+        if (!groups[roomName]) groups[roomName] = [];
+        groups[roomName].push(item);
         return groups;
     }, {});
 }
 
-function getOrderedRoomNames(groups){
-    const knownRooms = ROOM_ORDER.filter(roomName => groups[roomName]);
-    const otherRooms = Object.keys(groups)
-        .filter(roomName => !ROOM_ORDER.includes(roomName))
-        .sort();
-
-    return [...knownRooms, ...otherRooms];
+function getOrderedRoomNames(groups) {
+    const known = ROOM_ORDER.filter(name => groups[name]);
+    const other = Object.keys(groups).filter(name => !ROOM_ORDER.includes(name)).sort();
+    return [...known, ...other];
 }
 
-function renderRoomGroupHeader(roomName, groupItems){
+function renderRoomGroupHeader(roomName, groupItems) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    const total = groupItems.reduce((sum, item) => sum + Number(item.data.total || 0), 0);
-    const roomCount = groupItems.reduce((sum, item) => sum + Number(item.data.rooms || 0), 0);
+    const total = groupItems.reduce((sum, item) => sum + Number(item.total || 0), 0);
+    const roomCnt = groupItems.reduce((sum, item) => sum + Number(item.rooms || 0), 0);
 
     cell.colSpan = 8;
     cell.className = "border-t bg-gray-100 px-3 py-3";
     cell.innerHTML = `
         <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
             <strong class="text-gray-900">${roomName}</strong>
-            <span class="text-xs font-medium text-gray-600">${groupItems.length} booking | ${roomCount} kamar | ${formatRupiah(total)}</span>
+            <span class="text-xs font-medium text-gray-600">${groupItems.length} booking | ${roomCnt} kamar | ${formatRupiah(total)}</span>
         </div>
     `;
     row.appendChild(cell);
     table.appendChild(row);
 }
 
-function renderBookingRow(id, d){
+function renderBookingRow(id, d) {
     const row = document.createElement("tr");
     row.className = "odd:bg-white even:bg-gray-50 hover:bg-yellow-50";
 
-    setTextCell(row, d.bookingCode);
+    setTextCell(row, d.booking_code);
 
     const userCell = document.createElement("td");
     userCell.className = "border-t px-3 py-3 align-top";
     userCell.innerHTML = `
-        <strong class="block text-gray-900">${d.userName || "-"}</strong>
-        <span class="block text-xs text-gray-500">${d.userEmail || "-"}</span>
-        <span class="block text-xs text-gray-500">${d.userPhone || "-"}</span>
+        <strong class="block text-gray-900">${d.user_name || "-"}</strong>
+        <span class="block text-xs text-gray-500">${d.user_email || "-"}</span>
+        <span class="block text-xs text-gray-500">${d.user_phone || "-"}</span>
     `;
     row.appendChild(userCell);
 
@@ -241,155 +208,138 @@ function renderBookingRow(id, d){
 
     const actionCell = document.createElement("td");
     actionCell.className = "border-t px-3 py-3 align-top whitespace-nowrap";
-    actionCell.appendChild(makeButton(
-        "Edit",
-        "rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600",
-        () => openEditModal(id, d)
-    ));
+    actionCell.appendChild(makeButton("Edit", "rounded bg-blue-500 px-2 py-1 text-white hover:bg-blue-600", () => openEditModal(id, d)));
     actionCell.appendChild(document.createTextNode(" "));
-    actionCell.appendChild(makeButton(
-        "Konfirmasi",
-        "rounded bg-green-500 px-2 py-1 text-white hover:bg-green-600",
-        () => ubahStatus(id, "Dikonfirmasi")
-    ));
+    actionCell.appendChild(makeButton("Konfirmasi", "rounded bg-green-500 px-2 py-1 text-white hover:bg-green-600", () => ubahStatus(id, "Dikonfirmasi")));
     actionCell.appendChild(document.createTextNode(" "));
-    actionCell.appendChild(makeButton(
-        "Hapus",
-        "rounded bg-red-500 px-2 py-1 text-white hover:bg-red-600",
-        () => hapus(id)
-    ));
+    actionCell.appendChild(makeButton("Hapus", "rounded bg-red-500 px-2 py-1 text-white hover:bg-red-600", () => hapus(id)));
     row.appendChild(actionCell);
 
     table.appendChild(row);
 }
 
-function renderBookings(){
+function renderBookings() {
     const keyword = bookingSearch.value.trim().toLowerCase();
-    const filteredBookings = bookings.filter(({ data }) => bookingMatchesSearch(data, keyword));
-    const groupedBookings = groupBookingsByRoom(filteredBookings);
-    const roomNames = getOrderedRoomNames(groupedBookings);
+    const filtered = bookings.filter(d => bookingMatchesSearch(d, keyword));
+    const grouped = groupBookingsByRoom(filtered);
+    const roomNames = getOrderedRoomNames(grouped);
 
     table.replaceChildren();
-    emptySearchMessage.classList.toggle("hidden", filteredBookings.length > 0);
+    emptySearchMessage.classList.toggle("hidden", filtered.length > 0);
 
     roomNames.forEach(roomName => {
-        const groupItems = groupedBookings[roomName];
-        renderRoomGroupHeader(roomName, groupItems);
-        groupItems.forEach(({ id, data }) => renderBookingRow(id, data));
+        const items = grouped[roomName];
+        renderRoomGroupHeader(roomName, items);
+        items.forEach(d => renderBookingRow(d.id, d));
     });
 }
 
-function load(){
-db.collection("bookings")
-.orderBy("createdAt","desc")
-.onSnapshot(snapshot => {
-    bookings = [];
-
-    snapshot.forEach(doc => {
-        bookings.push({
-            id: doc.id,
-            data: doc.data()
-        });
-    });
-
-    renderBookings();
-});
+async function load() {
+    try {
+        const result = await api.getAllBookings();
+        bookings = result.data || [];
+        renderBookings();
+    } catch (error) {
+        console.error("Failed to load bookings:", error);
+    }
 }
 
-function getEditedBookingData(){
+function getEditedBookingData() {
     const nameValue = editUserName.value.trim();
     const emailValue = editUserEmail.value.trim().toLowerCase();
     const phoneValue = editUserPhone.value.trim();
     const guestValue = clampNumber(editGuests.value, 1, 10);
     const roomValue = clampNumber(editRooms.value, 1, 5);
-    const calculation = calculateEditedBooking();
+    const calc = calculateEditedBooking();
 
     editGuests.value = guestValue;
     editRooms.value = roomValue;
 
-    if(nameValue.length < 2 || nameValue.length > 80){
+    if (nameValue.length < 2 || nameValue.length > 80) {
         alert("Nama pemesan harus 2-80 karakter.");
         return null;
     }
-
-    if(!validEmail(emailValue)){
+    if (!validEmail(emailValue)) {
         alert("Format email tidak valid.");
         return null;
     }
-
-    if(!validPhone(phoneValue)){
-        alert("Nomor HP harus 8-20 karakter dan hanya berisi angka atau simbol telepon.");
+    if (!validPhone(phoneValue)) {
+        alert("Nomor HP harus 8-20 karakter.");
         return null;
     }
-
-    if(!calculation){
-        alert("Tanggal check-in dan check-out harus benar. Lama menginap 1-30 malam.");
+    if (!calc) {
+        alert("Tanggal check-in dan check-out harus benar.");
         return null;
     }
 
     return {
-        userName: nameValue,
-        userEmail: emailValue,
-        userPhone: phoneValue,
+        booking_id: editId.value,
+        user_name: nameValue,
+        user_email: emailValue,
+        user_phone: phoneValue,
         room: editRoom.value,
-        roomPrice: calculation.roomPrice,
         checkin: editCheckin.value,
         checkout: editCheckout.value,
-        nights: calculation.nights,
+        nights: calc.nights,
         guests: guestValue,
         rooms: roomValue,
-        paymentMethod: editPaymentMethod.value,
-        status: editStatus.value,
-        total: calculation.total
+        payment_method: editPaymentMethod.value,
+        status: editStatus.value
     };
 }
 
-function updateBooking(event){
+async function updateBooking(event) {
     event.preventDefault();
-
-    if(!auth.currentUser || !isAdminUser(auth.currentUser)){
+    if (!auth.currentUser || !isAdminUser(auth.currentUser)) {
         alert("Sesi admin tidak valid.");
         return;
     }
 
-    const editedBooking = getEditedBookingData();
-
-    if(!editedBooking){
-        return;
-    }
+    const data = getEditedBookingData();
+    if (!data) return;
 
     setEditLoading(true);
-
-    db.collection("bookings").doc(editId.value).update(editedBooking)
-    .then(() => closeEditModal())
-    .catch(error => alert("Gagal update data: " + error.message))
-    .finally(() => setEditLoading(false));
+    try {
+        await api.updateBooking(data);
+        closeEditModal();
+        await load();
+    } catch (error) {
+        alert("Gagal update data: " + error.message);
+    } finally {
+        setEditLoading(false);
+    }
 }
 
-function ubahStatus(id, status){
-    if(!auth.currentUser || !isAdminUser(auth.currentUser)){
+async function ubahStatus(id, status) {
+    if (!auth.currentUser || !isAdminUser(auth.currentUser)) {
         alert("Sesi admin tidak valid.");
         return;
     }
-
-    db.collection("bookings").doc(id).update({ status })
-    .catch(error => alert("Gagal mengubah status: " + error.message));
+    try {
+        await api.updateBooking({ booking_id: id, status });
+        await load();
+    } catch (error) {
+        alert("Gagal mengubah status: " + error.message);
+    }
 }
 
-function hapus(id){
-    if(!auth.currentUser || !isAdminUser(auth.currentUser)){
+async function hapus(id) {
+    if (!auth.currentUser || !isAdminUser(auth.currentUser)) {
         alert("Sesi admin tidak valid.");
         return;
     }
-
-    if(confirm("Hapus booking ini?")){
-        db.collection("bookings").doc(id).delete()
-        .catch(error => alert("Gagal menghapus booking: " + error.message));
+    if (confirm("Hapus booking ini?")) {
+        try {
+            await api.deleteBooking(id);
+            await load();
+        } catch (error) {
+            alert("Gagal menghapus booking: " + error.message);
+        }
     }
 }
 
 auth.onAuthStateChanged(user => {
-    if(isAdminUser(user)){
+    if (isAdminUser(user)) {
         load();
     }
 });
@@ -398,9 +348,7 @@ editForm.addEventListener("submit", updateBooking);
 document.getElementById("closeEditModal").addEventListener("click", closeEditModal);
 document.getElementById("cancelEdit").addEventListener("click", closeEditModal);
 editModal.addEventListener("click", event => {
-    if(event.target === editModal){
-        closeEditModal();
-    }
+    if (event.target === editModal) closeEditModal();
 });
 [editRoom, editCheckin, editCheckout, editRooms].forEach(input => {
     input.addEventListener("input", updateEditPreview);

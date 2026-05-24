@@ -72,6 +72,9 @@ docker/mysql-data/
 docker/mysql-data/**
 .docker-compose.cache
 
+# Old source directories (migrated)
+src/
+
 # Environment files (local overrides)
 .env.local
 .env.*.local

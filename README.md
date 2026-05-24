@@ -1,328 +1,161 @@
-# Hotel App - Reorganized with Docker & MySQL Backend
+# Hotel App - Dual Database Architecture (MySQL + Firebase)
 
-This is a reorganized version of the Hotel Reservation System with a proper project structure that separates concerns between frontend and backend, and includes Docker support for easy local development.
+Hotel reservation system with **MySQL** as the source of truth and **Firebase Authentication** for user identity. Firestore is available as an optional real-time sync layer.
+
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   BROWSER (Frontend)                        │
+│                    /public/*.html                           │
+│                                                             │
+│  Firebase Auth (login/signup)    PHP API Client (api.js)    │
+│       │                                    │                │
+└───────┼────────────────────────────────────┼────────────────┘
+        │                                    │
+        │ Firebase SDK                       │ HTTP
+        ▼                                    ▼
+┌───────────────┐                  ┌──────────────────────────┐
+│ Firebase Auth │                  │   PHP 8.1 / Apache API   │
+│  (Identity)   │                  │    /backend/api/         │
+│               │                  │                           │
+│  Firestore    │                  │  Middleware:              │
+│  (Optional)   │                  │  ├─ cors.php             │
+└───────────────┘                  │  ├─ auth.php             │
+                                   │  └─ response.php         │
+                                   │                           │
+                                   │  Endpoints:               │
+                                   │  ├─ bookings.php          │
+                                   │  ├─ rooms.php             │
+                                   │  ├─ users.php             │
+                                   │  └─ availability.php      │
+                                   └───────────┬───────────────┘
+                                               │ TCP/3306
+                                               ▼
+                                   ┌──────────────────────────┐
+                                   │     MySQL 8.0 Database    │
+                                   │  Tables: users, bookings, │
+                                   │          rooms, payments  │
+                                   └──────────────────────────┘
+```
 
 ## Project Structure
 
 ```
 hotel-app-startup/
-├── public/                    # Frontend - served by Firebase/Apache
-│   ├── index.html
-│   ├── admin.html
-│   ├── rooms.html
-│   ├── akomodasi.html
-│   ├── detail.html
-│   ├── gallery.html
-│   ├── dashboard.html
-│   ├── admin-login.html
-│   ├── 404.html
+├── public/                         # Frontend (Firebase Hosting)
+│   ├── index.html                  # Landing page
+│   ├── rooms.html                  # Room catalog
+│   ├── detail.html                 # Room detail
+│   ├── akomodasi.html              # Accommodation search
+│   ├── gallery.html                # Photo gallery
+│   ├── admin-login.html            # Admin auth page
+│   ├── admin.html                  # Admin dashboard
+│   ├── dashboard.html              # Booking form
+│   ├── 404.html                    # Error page
 │   ├── css/
 │   │   └── style.css
 │   └── js/
-│       ├── firebase.js       # Firebase config
-│       ├── auth.js           # Authentication logic
-│       ├── app.js            # Main app logic
-│       ├── admin.js
-│       ├── home.js
-│       ├── rooms.js
-│       ├── detail.js
-│       └── ...
+│       ├── firebase.js             # Firebase SDK init
+│       ├── auth.js                 # Auth state + admin check
+│       ├── api.js                  # PHP API client
+│       ├── app.js                  # Booking form logic
+│       ├── admin.js                # Admin dashboard
+│       ├── home.js                 # Home page + availability
+│       ├── rooms.js                # Room navigation
+│       └── detail.js               # Room detail page
 │
-├── src/
-│   └── backend/              # PHP backend API
-│       ├── config/
-│       │   └── db.php        # MySQL database connection
-│       └── api/
-│           ├── bookings.php  # Bookings CRUD endpoints
-│           ├── rooms.php     # Rooms GET endpoints
-│           └── ...
+├── backend/                        # PHP API
+│   ├── config/
+│   │   ├── db.php                  # MySQL connection
+│   │   └── firebase.php           # Firebase token verification
+│   ├── middleware/
+│   │   ├── cors.php                # CORS headers
+│   │   ├── auth.php                # Auth verification
+│   │   └── response.php           # JSON response helpers
+│   └── api/
+│       ├── index.php               # API status
+│       ├── bookings.php            # Bookings CRUD
+│       ├── rooms.php               # Room listing
+│       ├── users.php               # User management
+│       └── availability.php        # Room availability check
 │
 ├── database/
-│   └── init.sql              # MySQL schema initialization
+│   └── init.sql                    # MySQL schema + seed data
 │
 ├── docker/
-│   ├── apache.conf           # Apache configuration
-│   └── ...
+│   ├── Dockerfile                  # PHP Apache image
+│   └── apache.conf                 # Apache virtual host
 │
-├── docker-compose.yml        # Docker services configuration
-├── .env                      # Environment variables (local)
-├── .env.example              # Environment template for team
-├── .gitignore               # Git ignore rules
-├── firestore.rules          # Firebase Firestore security rules
-├── firebase.json            # Firebase configuration
-└── README.md                # This file
+├── scripts/
+│   ├── start.sh                    # Start Docker services
+│   └── stop.sh                     # Stop Docker services
+│
+├── firebase.json                   # Firebase Hosting config
+├── .firebaserc                     # Firebase project ref
+├── firestore.rules                 # Firestore security rules
+├── docker-compose.yml
+├── .env                            # Local environment vars
+├── .env.example
+├── .gitignore
+└── README.md
 ```
 
-## Prerequisites
+## Dual Database Design
 
-- **Docker** and **Docker Compose** installed on your system
-- **Modern web browser** with JavaScript enabled
+| Database | Role | Usage |
+|----------|------|-------|
+| **MySQL** | Source of truth | All business data: bookings, rooms, users, payments |
+| **Firebase Auth** | Identity provider | User login, registration, token generation |
+| **Firestore** | Optional real-time cache | Legacy support; can be removed when migration complete |
+
+### Data Flow
+
+1. **Authentication**: Firebase Auth SDK in the browser
+2. **Business Logic**: Frontend calls PHP API with Firebase ID token
+3. **Authorization**: PHP verifies the token via Firebase REST API
+4. **Data**: All CRUD operations go to MySQL
+5. **Real-time**: Firestore can optionally mirror MySQL for real-time features
 
 ## Quick Start
 
-### 1. Clone or Navigate to Project
 ```bash
-cd /path/to/hotel-app-startup
-```
-
-### 2. Set Environment Variables
-Copy the example environment file and modify as needed:
-```bash
+# 1. Set environment variables
 cp .env.example .env
-```
 
-Edit `.env` to customize:
-```env
-MYSQL_ROOT_PASSWORD=rootpassword123
-MYSQL_DATABASE=hotel_app_db
-MYSQL_USER=hotel_user
-MYSQL_PASSWORD=hotelpass123
-MYSQL_PORT=3306
-PHPMYADMIN_PORT=8080
-PHP_PORT=80
-```
-
-### 3. Start Docker Services
-```bash
+# 2. Start Docker services
 docker-compose up -d
-```
 
-This will:
-- Start MySQL 8.0 container with sample data
-- Start PHPMyAdmin on http://localhost:8080
-- Start Apache with PHP on http://localhost:80
+# 3. Access the app
+open http://localhost          # Frontend
+open http://localhost:8080     # PHPMyAdmin
+open http://localhost/backend/api/index.php  # API Status
 
-### 4. Access the Application
-
-#### Frontend (Static Files)
-- **Home Page**: `http://localhost/index.html`
-- Navigate to Firebase-hosted domain for production
-
-#### PHPMyAdmin (Database Management)
-- **URL**: `http://localhost:8080`
-- **Username**: `hotel_user`
-- **Password**: `hotelpass123` (or your custom value from .env)
-- **Root Password**: `rootpassword123` (or your custom root password)
-
-#### PHP API Endpoints
-Base URL: `http://localhost/src/backend/api/`
-
-**Bookings Endpoints:**
-- `GET /bookings.php?booking_id=1` - Get single booking
-- `GET /bookings.php?firebase_uid=USER_UID` - Get user's bookings
-- `POST /bookings.php` - Create new booking (requires JSON body)
-- `PUT /bookings.php` - Update booking status (requires JSON body)
-
-**Rooms Endpoints:**
-- `GET /rooms.php` - Get all rooms
-- `GET /rooms.php?id=1` - Get single room
-
-### 5. Example API Usage (JavaScript/Frontend)
-
-#### Fetch All Rooms
-```javascript
-fetch('http://localhost/src/backend/api/rooms.php')
-  .then(res => res.json())
-  .then(data => console.log(data.data));
-```
-
-#### Create a Booking
-```javascript
-const bookingData = {
-  firebase_uid: 'user_123',
-  user_name: 'John Doe',
-  user_email: 'john@example.com',
-  user_phone: '+6281234567890',
-  booking_code: 'HTL-123456-ABC12',
-  room: 'Deluxe Room',
-  room_price: 800000,
-  checkin: '2026-06-01',
-  checkout: '2026-06-03',
-  nights: 2,
-  guests: 2,
-  rooms: 1,
-  payment_method: 'Transfer Bank',
-  total: 1600000
-};
-
-fetch('http://localhost/src/backend/api/bookings.php', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(bookingData)
-})
-.then(res => res.json())
-.then(data => console.log(data));
-```
-
-#### Fetch User's Bookings
-```javascript
-const firebaseUid = 'user_123'; // From Firebase auth
-fetch(`http://localhost/src/backend/api/bookings.php?firebase_uid=${firebaseUid}`)
-  .then(res => res.json())
-  .then(data => console.log(data.data));
-```
-
-#### Update Booking Status
-```javascript
-const updateData = {
-  booking_id: 1,
-  status: 'Dikonfirmasi'
-};
-
-fetch('http://localhost/src/backend/api/bookings.php', {
-  method: 'PUT',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(updateData)
-})
-.then(res => res.json())
-.then(data => console.log(data));
-```
-
-## Database Schema
-
-### Tables
-- **users** - Stores user profile linked to Firebase UID
-- **rooms** - Stores room types and prices (Deluxe, Suite, Family)
-- **bookings** - Stores all reservations with validation
-- **payments** - Stores payment transaction records
-
-All tables use `utf8mb4` character set for full emoji/international character support.
-
-## Docker Commands
-
-### View Logs
-```bash
-docker-compose logs -f mysql
-docker-compose logs -f phpmyadmin
-docker-compose logs -f php
-```
-
-### Stop Services
-```bash
+# 4. Stop services
 docker-compose down
 ```
 
-### Stop Services and Remove Data
-```bash
-docker-compose down -v
-```
+## API Endpoints (All return JSON)
 
-### Rebuild Services
-```bash
-docker-compose up -d --build
-```
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/backend/api/rooms.php` | No | List all rooms |
+| GET | `/backend/api/rooms.php?id=ID` | No | Get room details |
+| GET | `/backend/api/availability.php?room=X&checkin=D1&checkout=D2` | No | Check room availability |
+| GET | `/backend/api/bookings.php?all=true` | Admin | Get all bookings |
+| GET | `/backend/api/bookings.php?firebase_uid=UID` | Yes | Get user bookings |
+| GET | `/backend/api/bookings.php?booking_id=ID` | Yes | Get single booking |
+| POST | `/backend/api/bookings.php` | Yes | Create booking |
+| PUT | `/backend/api/bookings.php` | Yes | Update booking |
+| DELETE | `/backend/api/bookings.php?booking_id=ID` | Admin | Delete booking |
+| GET | `/backend/api/users.php?firebase_uid=UID` | Yes | Get user profile |
+| POST | `/backend/api/users.php` | Yes | Create/update user |
 
-### Remove Everything
-```bash
-docker-compose down -v
-rm -rf docker/mysql-data
-```
+## Technology Stack
 
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `MYSQL_ROOT_PASSWORD` | MySQL root password | `rootpassword123` |
-| `MYSQL_DATABASE` | Database name | `hotel_app_db` |
-| `MYSQL_USER` | MySQL user | `hotel_user` |
-| `MYSQL_PASSWORD` | MySQL user password | `hotelpass123` |
-| `MYSQL_PORT` | MySQL port | `3306` |
-| `PHPMYADMIN_PORT` | PHPMyAdmin web port | `8080` |
-| `PHP_PORT` | PHP/Apache port | `80` |
-
-## Frontend Integration
-
-The frontend JavaScript files need to be updated to call the PHP API instead of/in addition to Firebase. Example:
-
-```javascript
-// Instead of Firebase only:
-// db.collection('bookings').add(data);
-
-// Use PHP API:
-const response = await fetch('http://localhost/src/backend/api/bookings.php', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(data)
-});
-const result = await response.json();
-```
-
-## Database Backup
-
-To backup your database:
-```bash
-# Backup from running container
-docker exec hotel-app-mysql mysqldump -u hotel_user -photelpass123 hotel_app_db > backup.sql
-
-# Restore
-cat backup.sql | docker exec -i hotel-app-mysql mysql -u hotel_user -photelpass123 hotel_app_db
-```
-
-## Troubleshooting
-
-### Can't connect to MySQL
-1. Ensure containers are running: `docker-compose ps`
-2. Wait for MySQL to be ready (check logs): `docker-compose logs mysql`
-3. Verify environment variables in `.env`
-
-### PHPMyAdmin shows "Cannot connect to server"
-1. Check MySQL container is healthy: `docker-compose logs mysql`
-2. Verify credentials in `.env`
-3. Ensure `MYSQL_USER` and `MYSQL_PASSWORD` are consistent
-
-### PHP can't connect to MySQL
-1. Container names must match in docker-compose.yml
-2. Port mappings - internal container communication uses port 3306
-3. Check PHP error logs: `docker-compose logs php`
-
-### Port Already in Use
-Change ports in `.env`:
-```env
-MYSQL_PORT=3307
-PHPMYADMIN_PORT=8081
-PHP_PORT=8000
-```
-
-Then modify docker-compose.yml port mappings accordingly.
-
-## Firebase Integration
-
-This project maintains:
-- **Firebase Authentication** - User login/registration (in frontend)
-- **Firebase Hosting** - Deploy the `/public` folder
-- **MySQL Database** - Backend data storage (new)
-- **PHP API** - Bridge between frontend and MySQL
-
-Update frontend JavaScript to use both Firebase Auth and PHP API for data persistence.
-
-## Security Notes
-
-⚠️ **Development Only**
-- `.env` contains plain-text credentials for Docker
-- Default passwords should be changed for production
-- Database should be behind authentication/firewall in production
-- Enable HTTPS for production
-- Implement proper JWT authentication between frontend and API
-
-## Future Enhancements
-
-- [ ] Add PHP-based user registration/profile management
-- [ ] Implement JWT authentication for API security
-- [ ] Add payment gateway integration (Midtrans, Stripe)
-- [ ] Email notifications for bookings
-- [ ] Admin dashboard API endpoints
-- [ ] Analytics and reporting
-- [ ] Image upload service
-
-## Support
-
-For issues or questions, check:
-1. Docker Compose logs: `docker-compose logs`
-2. PHPMyAdmin console: `http://localhost:8080`
-3. Browser console for frontend errors
-4. PHP error logs in container
-
-## License
-
-Same as original project
-
+- **Frontend**: HTML5, Tailwind CSS, Vanilla JavaScript
+- **Backend**: PHP 8.1 with Apache
+- **Database**: MySQL 8.0 (primary) + Firebase Firestore (optional)
+- **Auth**: Firebase Authentication
+- **Containerization**: Docker Compose
+- **Hosting**: Firebase Hosting (frontend) + VPS (backend)
